@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Elle Chatbot v2.2</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: 'Montserrat', sans-serif; }
+    #chatLauncher {
+      position: fixed; bottom: 20px; right: 20px;
+      background-color: #F26419; color: white;
+      border-radius: 50px; padding: 14px 18px;
+      font-weight: 600; cursor: pointer; z-index: 9999;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+    #chatBox {
+      display: none; position: fixed;
+      bottom: 80px; right: 20px;
+      width: 360px; max-height: 560px;
+      background-color: white;
+      border-radius: 16px; font-family: 'Montserrat', sans-serif;
+      box-shadow: 0 0 20px rgba(0,0,0,0.4); z-index: 9999;
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    #chatHeader {
+      background-color: #F26419; padding: 16px; color: white;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    #chatHeaderTop {
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    #chatHeaderTitle {
+      display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: bold;
+    }
+    #chatHeader img {
+      height: 30px; width: 30px; border-radius: 50%;
+    }
+    #chatOnline {
+      font-weight: 400; font-size: 12px;
+      display: flex; align-items: center; gap: 6px; padding-left: 40px;
+    }
+    .greenDot {
+      height: 8px; width: 8px; border-radius: 50%;
+      background-color: #3FAC9A;
+    }
+    #chatMessages {
+      flex: 1; padding: 14px; overflow-y: auto;
+      font-size: 14px; color: #252525;
+    }
+    .messageBlock {
+      display: flex; align-items: flex-start; margin-bottom: 14px;
+    }
+    .messageBlock.elle { flex-direction: row; }
+    .messageBlock.user { justify-content: flex-end; }
+    .message {
+      padding: 10px 14px; border-radius: 12px; max-width: 75%;
+    }
+    .elle .message {
+      background: #f6f6f6; color: black; margin-left: 10px;
+    }
+    .user .message {
+      background: #3fac9a; color: white;
+    }
+    .avatar {
+      height: 28px; width: 28px; border-radius: 50%; flex-shrink: 0;
+    }
+    .label {
+      font-size: 12px; color: #888; margin-left: 38px; margin-bottom: 4px;
+    }
+    #typingIndicator {
+      padding: 0 16px 8px; color: #888; display: none;
+    }
+    #inputArea {
+      display: flex; border-top: 1px solid #ccc;
+      background: #f6f6f6; padding: 8px;
+    }
+    #userInput {
+      flex: 1; border: none; padding: 10px;
+      font-size: 14px; background: #f6f6f6;
+    }
+    #sendButton {
+      background: #3fac9a; color: white; border: none;
+      padding: 0 16px; cursor: pointer; border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div id="chatLauncher" onclick="toggleChat()">Ask Elle</div>
+  <div id="chatBox">
+    <div id="chatHeader">
+      <div id="chatHeaderTop">
+        <div id="chatHeaderTitle">
+          <img src="https://static.wixstatic.com/media/cc1598_ee3f3a9bd75447f3afcf13c5d9d8f458~mv2.png" alt="Elle Avatar">
+          <span>ELLE</span>
+        </div>
+        <div style="cursor: pointer;" onclick="toggleChat()">✕</div>
+      </div>
+      <div id="chatOnline"><div class="greenDot"></div> Online now</div>
+    </div>
+    <div id="chatMessages"></div>
+    <div id="typingIndicator">Elle is typing...</div>
+    <div id="inputArea">
+      <input id="userInput" type="text" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendMessage()" />
+      <button id="sendButton" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+  <audio id="chime" src="https://assets.mixkit.co/sfx/preview/mixkit-clear-announce-tones-2861.mp3" preload="auto"></audio>
+  <script>
+    const webhookURL = "https://hook.eu2.make.com/r78dxfs4urh8h38ijatjc5kkmls5gvym";
+    function toggleChat() {
+      const chat = document.getElementById("chatBox");
+      if (chat.style.display === "flex") {
+        chat.style.display = "none";
+      } else {
+        chat.style.display = "flex";
+        if (!sessionStorage.getItem("greeted")) {
+          setTimeout(() => {
+            appendMessage("elle", "Hey I'm Elle, how can I help you today?");
+            sessionStorage.setItem("greeted", "true");
+          }, 400);
+        }
+      }
+    }
+    function appendMessage(sender, text) {
+      const msgArea = document.getElementById("chatMessages");
+      const block = document.createElement("div");
+      block.className = "messageBlock " + sender;
+      let content = "";
+      if (sender === "elle") {
+        content = `
+          <img class="avatar" src="https://static.wixstatic.com/media/cc1598_ee3f3a9bd75447f3afcf13c5d9d8f458~mv2.png" />
+          <div>
+            <div class="label">Elle</div>
+            <div class="message">${text}</div>
+          </div>`;
+        document.getElementById("chime").play();
+      } else {
+        content = `<div class="message">${text}</div>`;
+      }
+      block.innerHTML = content;
+      msgArea.appendChild(block);
+      msgArea.scrollTop = msgArea.scrollHeight;
+    }
+    async function sendMessage() {
+      const input = document.getElementById("userInput");
+      const text = input.value.trim();
+      if (!text) return;
+      appendMessage("user", text);
+      input.value = "";
+      document.getElementById("typingIndicator").style.display = "block";
+      try {
+        const res = await fetch(webhookURL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: text })
+        });
+        const data = await res.json();
+        document.getElementById("typingIndicator").style.display = "none";
+        appendMessage("elle", data.reply || "Hmm, I didn’t get that.");
+      } catch (e) {
+        document.getElementById("typingIndicator").style.display = "none";
+        appendMessage("elle", "Sorry, something went wrong.");
+      }
+    }
+    window.addEventListener("DOMContentLoaded", () => {
+      toggleChat();
+    });
+  </script>
+</body>
+</html>
